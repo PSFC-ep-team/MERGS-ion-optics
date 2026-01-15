@@ -203,7 +203,7 @@ PROCEDURE evaluate_spectrometer;
     count := 0;
     LOOP i 1 num_rays;
         IF input_rays(i,6)=0;
-            sum_x_squared := sum_x_squared + output_rays(i,1)^2/num_rays; {m^2}
+            sum_x_squared := sum_x_squared + output_rays(i,1)^2; {m^2}
             count := count + 1;
         ENDIF;
     ENDLOOP;

@@ -1,3 +1,4 @@
 cosy.*
 *.lis
 *.DAT
+.idea/*

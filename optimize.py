@@ -5,7 +5,7 @@ import re
 import subprocess
 from typing import Tuple, List, Union
 
-from numpy import sqrt, array_equal, array, empty_like
+from numpy import sqrt, array_equal, array, empty_like, inf
 from numpy.typing import NDArray
 from numexpr import evaluate
 from scipy import optimize, stats
@@ -66,13 +66,20 @@ def objective_function(parameter_vector: List[float]) -> float:
 	for i in range(i_resolution + 1, len(lines), 3):
 		if lines[i].endswith("MeV ->"):
 			resolutions.append(float(lines[i + 1].strip()))
-	
-	cost = sqrt(sum(resolution**2 for resolution in resolutions)/len(resolutions))
+	outputs = {}
+	for i in range(i_resolution):
+		if lines[i].endswith(":"):
+			key = lines[i][:-1].strip()
+			value = float(lines[i + 1])
+			outputs[key] = value
 
-	print("[", end="")
-	for value in parameter_vector:
-		print(f"{value},", end="")
-	print(f"]\n\t-> {sqrt(cost):4.1f} keV")
+	if outputs["system length"] > 100.0 or outputs["focal plane length"] > 100.0:
+		cost = inf
+	else:
+		cost = sum(resolution**2 for resolution in resolutions)/len(resolutions)
+
+	print("[" + ", ".join(f"{value:g}" for value in parameter_vector) + "]")
+	print(f"\t-> {sqrt(cost):4.1f} keV")
 	return cost
 
 

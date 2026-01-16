@@ -223,7 +223,7 @@ try:
 	with open(f"{FILE_TO_OPTIMIZE}_cache.pkl", "rb") as file:
 		cache = pickle.load(file)
 except FileNotFoundError:
-	pass
+	cache = {}
 
 infer_parameter_names()
 

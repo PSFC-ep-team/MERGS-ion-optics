@@ -48,6 +48,9 @@ def optimize_design():
 	else:
 		raise ValueError(f"I don't support the optimization method '{METHOD}'.")
 
+	with open(f"{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
+		pickle.dump(cache, file)
+
 	print(result)
 	run_cosy(result.x, output_mode="file", run_id="optimized", use_cache=False)
 
@@ -133,8 +136,9 @@ def run_cosy(parameter_vector: List[float], output_mode: str, run_id: str, use_c
 			raise RuntimeError("COSY threw an error")
 
 		cache[run_key] = output
-		with open(f"{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
-			pickle.dump(cache, file)
+		if len(cache)%20 == 0:
+			with open(f"{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
+				pickle.dump(cache, file)
 
 	return cache[run_key]
 

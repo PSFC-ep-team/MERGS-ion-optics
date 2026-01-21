@@ -174,7 +174,7 @@ def generate_initial_sample(
 	# for each parameter
 	for i in range(len(x0)):
 		new_vertex = array(x0)
-		step = ranges[i]/6
+		step = ranges[i]/8
 		if new_vertex[i] + step <= bounds[i][1]:
 			new_vertex[i] += step  # step a bit along its axis
 		else:
@@ -186,7 +186,7 @@ def generate_initial_sample(
 	# for each parameter
 	for i in range(len(x0)):
 		new_vertex = array(x0)
-		step = ranges[i]/6
+		step = ranges[i]/8
 		if new_vertex[i] - step >= bounds[i][0]:
 			new_vertex[i] -= step  # step a bit along its axis in the other direction
 			if not any(array_equal(new_vertex, vertex) for vertex in vertices):  # assuming that doesn't duplicate a previous step
@@ -198,15 +198,15 @@ def generate_initial_sample(
 	sample_lower_bounds = empty_like(x0)
 	sample_upper_bounds = empty_like(x0)
 	for i in range(len(x0)):
-		if x0[i] - ranges[i]/6 < bounds[i][0]:
+		if x0[i] - ranges[i]/8 < bounds[i][0]:
 			sample_lower_bounds[i] = bounds[i][0]
-			sample_upper_bounds[i] = bounds[i][0] + ranges[i]/3
-		elif x0[i] + ranges[i]/6 > bounds[i][1]:
-			sample_lower_bounds[i] = bounds[i][1] - ranges[i]/3
+			sample_upper_bounds[i] = bounds[i][0] + ranges[i]/4
+		elif x0[i] + ranges[i]/8 > bounds[i][1]:
+			sample_lower_bounds[i] = bounds[i][1] - ranges[i]/4
 			sample_upper_bounds[i] = bounds[i][1]
 		else:
-			sample_lower_bounds[i] = x0[i] - ranges[i]/6
-			sample_upper_bounds[i] = x0[i] + ranges[i]/6
+			sample_lower_bounds[i] = x0[i] - ranges[i]/8
+			sample_upper_bounds[i] = x0[i] + ranges[i]/8
 	sampler = stats.qmc.LatinHypercube(len(x0), rng=0)
 	for sample in sampler.random(n_desired - len(vertices)):
 		new_vertex = sample_lower_bounds + sample*(sample_upper_bounds - sample_lower_bounds)

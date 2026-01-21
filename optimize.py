@@ -140,7 +140,7 @@ def infer_parameter_names() -> None:
 	parameters = []
 	lines = script.split("\n")
 	for line in lines:
-		match = re.search(r"([A-Za-z_]+)\s*:=\s*([-.0-9]+).*\{\{PARAM([^}]*)\}\}", line)
+		match = re.search(r"^\s*([A-Za-z0-9_]+)\s*:=\s*([-.0-9]+).*\{\{PARAM([^}]*)\}\}", line)
 		if match is not None:
 			hyperparameters = {}
 			for arg in match.group(3).split("|"):
@@ -155,6 +155,8 @@ def infer_parameter_names() -> None:
 				bias=evaluate(hyperparameters["bias"]),
 				unit=hyperparameters["unit"],
 			))
+	if len(parameters) == 0:
+		raise ValueError("the COSY file didn't seem to have any parameters in it.")
 
 
 def generate_initial_sample(

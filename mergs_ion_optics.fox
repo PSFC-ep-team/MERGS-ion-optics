@@ -22,7 +22,7 @@ VARIABLE p_shape_out_3 1;
 VARIABLE shape_zero 1 3;
 
 VARIABLE p_dipole_field 1;
-VARIABLE p_bend_angle 1;
+VARIABLE p_dipole_length 1;
 VARIABLE p_drift_pre_aperture 1;
 VARIABLE p_drift_post_aperture 1;
 VARIABLE p_drift_m5a_m5b 1;
@@ -123,7 +123,7 @@ PROCEDURE CONFIG_ORDER_AND_VARIABLES order phase_space_dim n_parameters;
     OV order phase_space_dim n_parameters;
 ENDPROCEDURE;
 
-{ 
+{
     Tell COSY that we're working with an electron beam.
     must be called after CONFIG_ORDER_AND_VARIABLES. :P
 }
@@ -163,7 +163,7 @@ PROCEDURE transform_rays;
 		LOOP i_coord 1 8;
 			output_rays(i_ray,i_coord) := output_ray(i_coord);
 		ENDLOOP;
-	ENDLOOP; 
+	ENDLOOP;
 ENDPROCEDURE;
 
 { determine the distance from the last element to the point of best first-order focus }
@@ -317,9 +317,11 @@ ENDPROCEDURE;
 PROCEDURE elt_spectrometer;
     VARIABLE central_momentum 1;
     VARIABLE bend_radius 1;
+    VARIABLE bend_angle 1;
 
     central_momentum := (0.5110 + central_energy)*1.602e-13/2.998e8;
     bend_radius := central_momentum/(1.602e-19*p_dipole_field);
+    bend_angle := p_dipole_length/bend_radius*180/PI;
 
     shape_in(1) := p_shape_in_1;
     shape_in(2) := p_shape_in_2;
@@ -346,7 +348,7 @@ PROCEDURE elt_spectrometer;
 
     ELT_DRIFT_LENGTH p_drift_m5a_m5b;
 
-    ELT_MULTIPOLE_5 
+    ELT_MULTIPOLE_5
         p_m5b_length
         p_m5b_quad p_m5b_hex 0 0 0
         0.05;
@@ -354,19 +356,19 @@ PROCEDURE elt_spectrometer;
     ELT_DRIFT_LENGTH p_drift_pre_bend;
 
     ELT_BENDING
-        bend_radius p_bend_angle 0.075
+        bend_radius bend_angle 0.075
         shape_zero shape_in shape_out 3;
 
     ELT_DRIFT_LENGTH p_drift_post_bend;
 
-    ELT_MULTIPOLE_5 
+    ELT_MULTIPOLE_5
         p_m5c_length
         p_m5c_quad p_m5c_hex 0 0 0
         0.05;
 
     calculate_final_drift;
     ELT_DRIFT_LENGTH p_drift_pre_hodoscope;
-    
+
     ELT_APERTURE 0.05; {for scoping hodoscope size}
 ENDPROCEDURE;
 
@@ -387,20 +389,20 @@ PROCEDURE main;
     config_spectrometer;
 
     { set upper bound for the foil dimensions }
-    foil_width := 0.015;
+    foil_width := 0.02;
     foil_height := 0.03;
     aperture_width := 0.02;
-    aperture_height := 0.04;
+    aperture_height := 0.03;
+    p_drift_pre_aperture := 0.25;
 
     { set the ion-optic parameters }
-    p_dipole_field := 0.1; {{PARAM |min=0.01 |max=1.5 |bias=-1/0.1 |unit=T}}
-    p_bend_angle := 110; {{PARAM |min=0 |max=120 |bias=-1/360 |unit=deg}}
-    p_drift_pre_aperture := 0.20;
-    p_drift_post_aperture := 0.05; {{PARAM |min=0 |max=1 |bias=-1/1.00 |unit=m}}
-    p_drift_m5a_m5b := 0.08; {{PARAM |min=0 |max=1 |bias=-1/1.00 |unit=m}}
-    p_drift_pre_bend := 0.15; {{PARAM |min=0 |max=1 |bias=-1/1.00 |unit=m}}
-    p_drift_post_bend := 0.20; {{PARAM |min=0 |max=1 |bias=-1/1.00 |unit=m}}
-    p_drift_pre_hodoscope := 0; {{CONSTRAINT |min=0 |max=1 |bias=-1/1.00 |unit=m}}
+    p_dipole_field := 0.1; {{PARAM |min=0.01 |max=1.5 |bias=-1/1.00 |unit=T}}
+    p_dipole_length := 1.06; {{PARAM |min=0 |max=1 |bias=-1/0.10 |unit=deg}}
+    p_drift_post_aperture := 0.05; {{PARAM |min=0 |max=1 |bias=0 |unit=m}}
+    p_drift_m5a_m5b := 0.08; {{PARAM |min=0 |max=1 |bias=0 |unit=m}}
+    p_drift_pre_bend := 0.15; {{PARAM |min=0 |max=1 |bias=0 |unit=m}}
+    p_drift_post_bend := 0.20; {{PARAM |min=0 |max=1 |bias=0 |unit=m}}
+    p_drift_pre_hodoscope := 0; {{CONSTRAINT |min=0 |max=1 |bias=0 |unit=m}}
     p_m5a_length := 0.10; {{PARAM |min=0 |max=1 |bias=-1/0.10 |unit=m}}
     p_m5a_quad := -0.062; {{PARAM |min=-0.2 |max=0.2 |bias=-1/0.10 |unit=T}}
     p_m5a_hex := 0; {{PARAM |min=-0.2 |max=0.2 |bias=-1/0.10 |unit=T}}
@@ -455,7 +457,7 @@ PROCEDURE main;
     ENDIF;
 
     WRITE out 'p_dipole_field := '&SF(p_dipole_field, '(F10.6)');
-    WRITE out 'p_bend_angle := '&SF(p_bend_angle, '(F10.6)');
+    WRITE out 'p_dipole_length := '&SF(p_dipole_length, '(F10.6)');
     WRITE out 'p_drift_post_aperture := '&SF(p_drift_post_aperture, '(F10.6)');
     WRITE out 'p_drift_pre_bend := '&SF(p_drift_pre_bend, '(F10.6)');
     WRITE out 'p_drift_m5a_m5b := '&SF(p_drift_m5a_m5b, '(F10.6)');

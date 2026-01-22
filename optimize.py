@@ -49,11 +49,18 @@ def optimize_design():
 	else:
 		raise ValueError(f"I don't support the optimization method '{METHOD}'.")
 
-	with open(f"{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
+	# save the final cache
+	with open(f"generated/{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
 		pickle.dump(cache, file)
 
+	# clean up the temporary files
+	for filename in os.listdir("generated"):
+		if re.search(r"_proc[0-9]+", filename):
+			os.remove(f"generated/{filename}")
+
+	# output the final result
 	print(result)
-	run_cosy(result.x, output_mode="file", run_id="optimized", use_cache=False)
+	run_cosy(result.x, output_mode="file", run_id=f"optimal_{ORDER}th_{FRUGALITY}x", use_cache=False)
 
 
 def objective_function(parameter_vector: List[float]) -> float:
@@ -62,7 +69,7 @@ def objective_function(parameter_vector: List[float]) -> float:
 	output = run_cosy(
 		parameter_vector,
 		output_mode="none",
-		run_id=str(multiprocessing.current_process().pid))
+		run_id=f"proc{multiprocessing.current_process().pid}")
 
 	lines = output.split("\n")
 	i_resolution = lines.index("algebraic resolution:")
@@ -123,22 +130,22 @@ def run_cosy(parameter_vector: List[float], output_mode: str, run_id: str, use_c
 		# set the order of the calculation to the desired value
 		modified_script = re.sub(r"order := [0-9];", f"order := {ORDER};", modified_script)
 		# set the output filename appropriately
-		modified_script = re.sub(r"out_filename := '.*';", f"out_filename := 'generated/out{run_id}.txt';", modified_script)
+		modified_script = re.sub(r"out_filename := '.*';", f"out_filename := 'generated/{FILE_TO_OPTIMIZE}_{run_id}_output.txt';", modified_script)
 		for i, parameter in enumerate(parameters):
 			name = parameter.name
 			value = parameter_vector[i]
 			modified_script = re.sub(rf"{name} := [-.0-9]+;", f"{name} := {value};", modified_script)
 
 		os.makedirs("generated", exist_ok=True)
-		with open(f'generated/{run_id}.fox', 'w') as file:
+		with open(f'generated/{FILE_TO_OPTIMIZE}_{run_id}.fox', 'w') as file:
 			file.write(modified_script)
 
 		subprocess.run(
-			['cosy', f'generated/{run_id}'],
+			['cosy', f'generated/{FILE_TO_OPTIMIZE}_{run_id}'],
 			check=True, stdout=subprocess.DEVNULL)
 
 		# store full parameter sets and their resulting COSY outputs in the cache
-		with open(f"generated/out{run_id}.txt") as file:
+		with open(f"generated/{FILE_TO_OPTIMIZE}_{run_id}_output.txt") as file:
 			output = file.read()
 		output = re.sub(r"[\n\r]+", "\n", output)
 		if "$$$ ERROR" in output or "### ERROR" in output:
@@ -147,7 +154,7 @@ def run_cosy(parameter_vector: List[float], output_mode: str, run_id: str, use_c
 
 		cache[run_key] = output
 		if len(cache)%20 == 0:
-			with open(f"{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
+			with open(f"generated/{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
 				pickle.dump(cache, file)
 
 	return cache[run_key]
@@ -254,7 +261,7 @@ with open(f'{FILE_TO_OPTIMIZE}.fox', 'r') as file:
 	script = file.read()
 
 try:
-	with open(f"{FILE_TO_OPTIMIZE}_cache.pkl", "rb") as file:
+	with open(f"generated/{FILE_TO_OPTIMIZE}_cache.pkl", "rb") as file:
 		cache = pickle.load(file)
 except FileNotFoundError:
 	cache = {}

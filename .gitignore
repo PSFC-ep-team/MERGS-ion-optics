@@ -3,5 +3,4 @@ cosy.*
 *.DAT
 generated/*
 pic*.pdf
-*_cache.pkl
 .idea/*

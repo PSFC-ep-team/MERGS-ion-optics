@@ -13,6 +13,7 @@ from scipy import optimize, stats
 
 FILE_TO_OPTIMIZE = "mergs_ion_optics"
 ORDER = 2
+FRUGALITY = 0.1
 METHOD = "nelder-mead"
 
 
@@ -94,10 +95,10 @@ def objective_function(parameter_vector: List[float]) -> float:
 	if outputs["system length"] > 300.0 or outputs["focal plane length"] > 100.0 or outputs["focal plane height"] > 50.0:
 		cost = inf
 	else:
-		cost = penalty + 20*log(mean_resolution)
+		cost = FRUGALITY*penalty + 2*log(mean_resolution)
 
 	print("[" + ", ".join(f"{value:g}" for value in parameter_vector) + "]")
-	print(f"\t-> {penalty:.6g} + 20 log({mean_resolution:5.2f} keV) = {cost:.6g}")
+	print(f"\t-> {FRUGALITY}*{penalty:.6g} + 2*log({mean_resolution:5.2f} keV) = {cost:.6g}")
 	return cost
 
 

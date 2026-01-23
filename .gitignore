@@ -3,4 +3,5 @@ cosy.*
 *.DAT
 generated/*
 pic*.pdf
+pic*.svg
 .idea/*

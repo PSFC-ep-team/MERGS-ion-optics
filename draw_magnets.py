@@ -1,0 +1,201 @@
+import re
+from typing import Tuple, Dict, Sequence, List
+
+from numpy import sin, cos, pi
+
+FILE_TO_OPTIMIZE = "mergs_ion_optics"
+PARAMETER_STRING = """
+foil_width := 0.2000000E-01;
+foil_height := 0.2000000E-01;
+aperture_width := 0.2000000E-01;
+aperture_height := 0.2000000E-01;
+p_dipole_field := 0.3163845;
+p_dipole_length := 0.1945813;
+p_drift_pre_aperture := 0.2500000;
+p_drift_pre_bend := 0.5197086;
+p_drift_post_bend := 0.4414709;
+p_shape_in_1 := 0.4501421;
+p_shape_in_2 :=  5.496986;
+p_shape_in_3 :=  0.000000;
+p_shape_out_1 := 0.1685695;
+p_shape_out_2 := -4.624851;
+p_shape_out_3 :=  12.75657;
+"""
+
+
+def draw_magnets():
+	"""
+	generate a nice vector graphic of the ion-optic system design.
+	unlike COSY this will not include rays but will include face shaping.
+	"""
+	parameters = parse_parameters(PARAMETER_STRING)
+
+	paths = []
+	x = .10
+	y = .10
+	θ = 0
+
+	draw_plane(
+		paths, x, y, θ,
+		parameters["foil_width"]/2,
+	)
+	x, y = draw_drift_length(
+		paths, x, y, θ,
+		parameters["p_drift_pre_aperture"],
+	)
+	draw_plane(
+		paths, x, y, θ,
+		parameters["aperture_width"]/2,
+	)
+	x, y = draw_drift_length(
+		paths, x, y, θ,
+		parameters["p_drift_pre_bend"],
+	)
+	x, y, θ = draw_bending_magnet(
+		paths, x, y, θ,
+		parameters["p_dipole_length"],
+		parameters["p_dipole_field"],
+		0.09,
+		[
+			parameters["p_shape_in_1"],
+			parameters["p_shape_in_2"],
+			parameters["p_shape_in_3"],
+		],
+		[
+			parameters["p_shape_out_1"],
+			parameters["p_shape_out_2"],
+			parameters["p_shape_out_3"],
+		],
+	)
+	x, y = draw_drift_length(
+		paths, x, y, θ,
+		parameters["p_drift_post_bend"],
+	)
+	draw_plane(paths, x, y, θ, 0.05)
+
+	write_SVG("picture.svg", paths)
+
+
+def parse_parameters(output: str) -> Dict[str, float]:
+	parameters = {}
+	for line in re.split(r"\r?\n", output):
+		line_parse = re.match(r"^\s*([a-z0-9_]+)\s*:=\s*([-+0-9.e]+);$", line, re.IGNORECASE)
+		if line_parse is not None:
+			key, value = line_parse.groups()
+			parameters[key] = float(value)
+	return parameters
+
+
+def draw_plane(
+		graphic: List[Path], x: float, y: float, θ: float, radius: float
+) -> None:
+	line = [
+		("M", [x + radius*sin(θ), y - radius*cos(θ)]),
+		("L", [x - radius*sin(θ), y + radius*cos(θ)]),
+	]
+	graphic.append(Path(klass="plane", commands=line, zorder=1))
+
+
+def draw_drift_length(
+		graphic: List[Path], x: float, y: float, θ: float, length: float
+) -> Tuple[float, float]:
+	line = [
+		("M", [x, y]),
+		("L", [x + length*cos(θ), y + length*sin(θ)]),
+	]
+	graphic.append(Path(klass="central-ray", commands=line, zorder=2))
+
+	x, y = line[-1][1]
+	return x, y
+
+
+def draw_bending_magnet(
+		graphic: List[Path], x: float, y: float, θ: float,
+		length: float, field: float, bore_radius: float,
+		in_shape_parameters: Sequence[float], out_shape_parameters: Sequence[float],
+) -> Tuple[float, float, float]:
+	central_momentum = (0.5110 + 16)*1.602e-13/2.998e8  # kg*m/s
+	bend_radius = central_momentum/(1.602e-19*field)  # m
+	bend_angle = length/bend_radius  # radians
+	x_center = x - bend_radius*sin(θ)
+	y_center = y + bend_radius*cos(θ)
+
+	block = [
+		("M", [
+			x_center + (bend_radius + bore_radius)*sin(θ),
+			y_center - (bend_radius + bore_radius)*cos(θ),
+		]),
+		("A", [
+			bend_radius + bore_radius, bend_radius + bore_radius,
+			0, (1 if bend_angle > pi else 0), 1,
+			x_center + (bend_radius + bore_radius)*sin(θ + bend_angle),
+			y_center - (bend_radius + bore_radius)*cos(θ + bend_angle),
+		]),
+		("L", [
+			x_center + (bend_radius - bore_radius)*sin(θ + bend_angle),
+			y_center - (bend_radius - bore_radius)*cos(θ + bend_angle),
+		]),
+		("A", [
+			bend_radius - bore_radius, bend_radius - bore_radius,
+			0, (1 if bend_angle > pi else 0), 0,
+			x_center + (bend_radius - bore_radius)*sin(θ),
+			y_center - (bend_radius - bore_radius)*cos(θ),
+		]),
+		("Z", []),
+	]
+	graphic.append(Path(klass="magnet", commands=block, zorder=1))
+
+	arc = [
+		("M", [x, y]),
+		("A", [
+			bend_radius, bend_radius,
+			0, (1 if bend_angle > pi else 0), 1,
+			x_center + bend_radius*sin(θ + bend_angle),
+			y_center - bend_radius*cos(θ + bend_angle),
+		]),
+	]
+	graphic.append(Path(klass="central-ray", commands=arc, zorder=2))
+
+	x, y = arc[-1][1][-2:]
+	θ = θ + bend_angle
+	return x, y, θ
+
+
+def write_SVG(filename: str, paths: List[Path]) -> None:
+	svg_string = (
+		'<?xml version="1.0" encoding="UTF-8"?>\n'
+		'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox=".00 .00 2.00 1.00">\n'
+		'  <style>\n'
+		'    .magnet { fill: #8b959e; stroke: none; }\n'
+		'    .plane { fill: none; stroke: #8b959e; stroke-width: .01; stroke-linecap: butt; }\n'
+		'    .central-ray { fill: none; stroke: #750014; stroke-width: .01; stroke-linecap: round; }\n'
+		'  </style>\n'
+	)
+
+	for path in sorted(paths, key=lambda path: path.zorder):
+		d = " ".join(tipe + ",".join(format_number(arg) for arg in args) for tipe, args in path.commands)
+		svg_string += f'  <path class="{path.klass}" d="{d}" />\n'
+
+	svg_string += '</svg>\n'
+
+	with open(filename, "w") as file:
+		file.write(svg_string)
+	print(f"Saved image to {filename}.")
+
+
+def format_number(x):
+	if x == int(x):
+		return f"{x:d}"
+	else:
+		return f"{x:.6f}"
+
+
+class Path:
+	def __init__(self, klass: str, commands: List[Tuple[str, List[float]]], zorder: int):
+		self.klass = klass
+		self.commands = commands
+		self.zorder = zorder
+
+
+if __name__ == "__main__":
+	draw_magnets()

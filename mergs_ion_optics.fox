@@ -318,6 +318,8 @@ PROCEDURE elt_spectrometer;
 
     UNITY_MAP;
 
+    ELT_APERTURE MAX(foil_width, foil_height)/2;
+
     ELT_DRIFT_LENGTH p_drift_pre_aperture;
 
     ELT_APERTURE MAX(aperture_width, aperture_height)/2;
@@ -331,7 +333,7 @@ PROCEDURE elt_spectrometer;
     calculate_final_drift;
     ELT_DRIFT_LENGTH p_drift_post_bend;
 
-    ELT_APERTURE 0.05; {for scoping hodoscope size}
+    ELT_APERTURE 0.01; {for scoping hodoscope size}
 ENDPROCEDURE;
 
 PROCEDURE main;
@@ -406,8 +408,13 @@ PROCEDURE main;
         out := 0;
     ENDIF;
 
+    WRITE out 'foil_width := '&SF(foil_width, '(G13.7)')&';';
+    WRITE out 'foil_height := '&SF(foil_height, '(G13.7)')&';';
+    WRITE out 'aperture_width := '&SF(aperture_width, '(G13.7)')&';';
+    WRITE out 'aperture_height := '&SF(aperture_height, '(G13.7)')&';';
     WRITE out 'p_dipole_field := '&SF(p_dipole_field, '(G13.7)')&';';
     WRITE out 'p_dipole_length := '&SF(p_dipole_length, '(G13.7)')&';';
+    WRITE out 'p_drift_pre_aperture := '&SF(p_drift_pre_aperture, '(G13.7)')&';';
     WRITE out 'p_drift_pre_bend := '&SF(p_drift_pre_bend, '(G13.7)')&';';
     WRITE out 'p_drift_post_bend := '&SF(p_drift_post_bend, '(G13.7)')&';';
     WRITE out 'p_shape_in_1 := '&SF(p_shape_in_1, '(G13.7)')&';';

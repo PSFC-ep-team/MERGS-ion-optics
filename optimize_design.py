@@ -57,7 +57,7 @@ def optimize_design():
 		raise ValueError(f"I don't support the optimization method '{METHOD}'.")
 
 	# save the final cache
-	with open(f"generated/{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
+	with open(f"generated/{FILE_TO_OPTIMIZE}_{ORDER}_cache.pkl", "wb") as file:
 		pickle.dump(cache, file)
 
 	# clean up the temporary files
@@ -152,7 +152,7 @@ def run_cosy(parameter_vector: List[float], output_mode: str, run_id: str, use_c
 
 		cache[run_key] = output
 		if len(cache)%20 == 0:
-			with open(f"generated/{FILE_TO_OPTIMIZE}_cache.pkl", "wb") as file:
+			with open(f"generated/{FILE_TO_OPTIMIZE}_{ORDER}_cache.pkl", "wb") as file:
 				pickle.dump(cache, file)
 
 	return cache[run_key]
@@ -262,7 +262,7 @@ with open(f'{FILE_TO_OPTIMIZE}.fox', 'r') as file:
 	script = file.read()
 
 try:
-	with open(f"generated/{FILE_TO_OPTIMIZE}_cache.pkl", "rb") as file:
+	with open(f"generated/{FILE_TO_OPTIMIZE}_{ORDER}_cache.pkl", "rb") as file:
 		cache = pickle.load(file)
 except FileNotFoundError:
 	cache = {}

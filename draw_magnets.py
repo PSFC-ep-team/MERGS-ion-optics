@@ -28,6 +28,7 @@ p_shape_out_3 :=  0.000000;
 dipole_bend_angle :=  78.05899;
 dipole_bend_radius := 0.1496110;
 """
+CENTRAL_ENERGY = 13.5
 
 
 def draw_magnets():
@@ -148,36 +149,36 @@ def draw_bending_magnet(
 		length: float, field: float, bore_radius: float,
 		in_shape_parameters: List[float], out_shape_parameters: List[float],
 ) -> Tuple[float, float, float]:
-	central_momentum = (0.5110 + 16)*1.602e-13/2.998e8  # kg*m/s
+	central_momentum = (0.5110 + CENTRAL_ENERGY)*1.602e-13/2.998e8  # kg*m/s
 	bend_radius = central_momentum/(1.602e-19*field)  # m
 	bend_angle = length/bend_radius  # radians
 	x_center = x - bend_radius*sin(θ)
 	y_center = y + bend_radius*cos(θ)
 
 	ξ = linspace(-bore_radius, bore_radius, 21)
-	ζ_back = -evaluate_polynomial(ξ, [0] + in_shape_parameters)
-	x_back = x_center + (bend_radius - ξ)*sin(θ) + ζ_back*cos(θ)
-	y_back = y_center - (bend_radius - ξ)*cos(θ) + ζ_back*sin(θ)
+	ζ_back = evaluate_polynomial(ξ, [0] + in_shape_parameters)
+	x_back = x_center + (bend_radius + ξ)*sin(θ) + ζ_back*cos(θ)
+	y_back = y_center - (bend_radius + ξ)*cos(θ) + ζ_back*sin(θ)
 	R_back = hypot(x_back - x_center, y_back - y_center)
 	within_radius = R_back <= bend_radius + bore_radius
 	x_back = x_back[within_radius]
 	y_back = y_back[within_radius]
-	ζ_front = evaluate_polynomial(ξ, [0] + out_shape_parameters)
-	x_front = x_center + (bend_radius - ξ)*sin(θ + bend_angle) + ζ_front*cos(θ + bend_angle)
-	y_front = y_center - (bend_radius - ξ)*cos(θ + bend_angle) + ζ_front*sin(θ + bend_angle)
+	ζ_front = -evaluate_polynomial(ξ, [0] + out_shape_parameters)
+	x_front = x_center + (bend_radius + ξ)*sin(θ + bend_angle) + ζ_front*cos(θ + bend_angle)
+	y_front = y_center - (bend_radius + ξ)*cos(θ + bend_angle) + ζ_front*sin(θ + bend_angle)
 	R_front = hypot(x_front - x_center, y_front - y_center)
 	within_radius = R_front <= bend_radius + bore_radius
 	x_front = x_front[within_radius]
 	y_front = y_front[within_radius]
 
 	block = [
-		("M", [x_back[0], y_back[0]]),
+		("M", [x_back[-1], y_back[-1]]),
 		("A", [
 			bend_radius + bore_radius, bend_radius + bore_radius,
 			0, (1 if bend_angle > pi else 0), 1,
-			x_front[0], y_front[0],
+			x_front[-1], y_front[-1],
 		]),
-		*[("L", [x, y]) for x, y in zip(x_front[1:], y_front[1:])],
+		*[("L", [x, y]) for x, y in zip(x_front[-2::-1], y_front[-2::-1])],
 		("L", [
 			x_center + (bend_radius - bore_radius)*sin(θ + bend_angle),
 			y_center - (bend_radius - bore_radius)*cos(θ + bend_angle),
@@ -188,7 +189,7 @@ def draw_bending_magnet(
 			x_center + (bend_radius - bore_radius)*sin(θ),
 			y_center - (bend_radius - bore_radius)*cos(θ),
 		]),
-		*[("L", [x, y]) for x, y in zip(x_back[::-1], y_back[::-1])],
+		*[("L", [x, y]) for x, y in zip(x_back, y_back)],
 		("Z", []),
 	]
 	graphic.append(Path(klass="magnet", commands=block, zorder=1))
@@ -219,7 +220,7 @@ def evaluate_polynomial(x, coefficients):
 def write_SVG(filename: str, paths: List[Path]) -> None:
 	svg_string = (
 		'<?xml version="1.0" encoding="UTF-8"?>\n'
-		'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox=".00 .00 2.00 1.00">\n'
+		'<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox=".00 .00 2.00 1.00" width="2m" height="1m">\n'
 		'  <style>\n'
 		'    .magnet { fill: #8b959e; stroke: none; }\n'
 		'    .plane { fill: none; stroke: #8b959e; stroke-width: .01; stroke-linecap: butt; }\n'

@@ -9,20 +9,24 @@ foil_width := 0.3000000E-01;
 foil_height := 0.3000000E-01;
 aperture_width := 0.3000000E-01;
 aperture_height := 0.3000000E-01;
-p_m5_quad_field := 0.1605713;
+p_m5_quad_field := 0.4093343E-01;
 p_m5_hex_field :=  0.000000;
-p_dipole_field := 0.3468082;
-p_m5_length := 0.2436876E-01;
-p_dipole_length := 0.1923864;
+p_dipole_field := 0.3123733;
+p_m5_radius := 0.2748934E-01;
+p_m5_length := 0.1099574;
+p_dipole_halfwidth := 0.1300000;
+p_dipole_length := 0.2038280;
 p_drift_pre_aperture := 0.5000000;
-p_drift_pre_bend := 0.2540042;
-p_drift_post_bend := 0.3399309;
-p_shape_in_1 := 0.6623008;
-p_shape_in_2 :=  6.541441;
+p_drift_pre_bend := 0.2034160;
+p_drift_post_bend := 0.4658314;
+p_shape_in_1 := 0.5945187;
+p_shape_in_2 :=  5.761873;
 p_shape_in_3 :=  0.000000;
-p_shape_out_1 := 0.4610903;
-p_shape_out_2 := -4.101332;
+p_shape_out_1 := 0.4287605;
+p_shape_out_2 := -3.438266;
 p_shape_out_3 :=  0.000000;
+dipole_bend_angle :=  78.05899;
+dipole_bend_radius := 0.1496110;
 """
 
 
@@ -53,7 +57,7 @@ def draw_magnets():
 	x, y = draw_multipole_magnet(
 		paths, x, y, θ,
 		parameters["p_m5_length"],
-		0.02,
+		parameters["p_m5_radius"],
 	)
 	x, y = draw_drift_length(
 		paths, x, y, θ,
@@ -63,7 +67,7 @@ def draw_magnets():
 		paths, x, y, θ,
 		parameters["p_dipole_length"],
 		parameters["p_dipole_field"],
-		0.09,
+		0.13,
 		[
 			parameters["p_shape_in_1"],
 			parameters["p_shape_in_2"],
